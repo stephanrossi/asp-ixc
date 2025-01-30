@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('contracts', function (Blueprint $table) {
             // Digamos que a coluna seja do tipo string e já exista na tabela
             $table->string('asp_document_id')
-                ->default('')
+                ->default('da')
                 ->change();
         });
     }
