@@ -14,6 +14,12 @@ return [
     |
     */
 
+    'ixc_api' => [
+        'url' => env('IXC_API_URL'),
+        'id' => env('IXC_API_ID'),
+        'token' => env('IXC_API_TOKEN'),
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
