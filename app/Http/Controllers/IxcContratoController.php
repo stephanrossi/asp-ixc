@@ -14,7 +14,7 @@ class IxcContratoController extends Controller
     /**
      * Obtém contratos do IXC Provedor via API.
      */
-    public function IxcContratoController()
+    public function buscarContratos()
     {
         try {
             // Faz a requisição à API
@@ -119,7 +119,8 @@ class IxcContratoController extends Controller
                     ]);
                 }
             }
-            return Cliente::where('cliente_id', $cliente_id);
+            return Cliente::where('cliente_id', $cliente_id)
+                ->first();
         } catch (\Exception $e) {
             // Registra erro no log
             Log::channel('ixc')->error('Erro ao obter dados do cliente', [
