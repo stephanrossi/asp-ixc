@@ -13,6 +13,10 @@ Route::post('/webhook', [SignerController::class, 'handle']);
 
 Route::post('/ixc-contrato', [IxcContratoController::class, 'buscarContratos']);
 Route::post('/ixc-cliente', [IxcContratoController::class, 'buscarCliente']);
+Route::get('/ixc-documento', [IxcContratoController::class, 'buscarDocumentoContrato']);
+
+Route::get('/handle', [IxcContratoController::class, 'handle']);
+
 
 Route::get('/ping', function () {
     return response()->json([

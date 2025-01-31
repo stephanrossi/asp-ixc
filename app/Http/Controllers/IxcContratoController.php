@@ -8,12 +8,30 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class IxcContratoController extends Controller
 {
     /**
      * Obtém contratos do IXC Provedor via API.
      */
+    public function handle()
+    {
+        $contratos = $this->buscarContratos();
+
+        print_r($contratos->toJson());die;
+
+        foreach ($contratos as $contrato) {
+            if ($contrato['asp_document_id'] == null || empty($contrato['asp_document_id'])) {
+                $dados_cliente = $this->buscarCliente($contrato['id_cliente']);
+
+                $pdf_contrato_base64 = $this->buscarDocumentoContrato($contrato['id']);
+
+                SignerController::handle($dados_cliente, $pdf_contrato_base64);
+            }
+        }
+    }
+
     public function buscarContratos()
     {
         try {
@@ -63,6 +81,45 @@ class IxcContratoController extends Controller
         } catch (\Exception $e) {
             // Registra erro no log
             Log::channel('ixc')->error('Erro ao buscar contratos do IXC', [
+                'message' => $e->getMessage(),
+                // 'trace'   => $e->getTrace()
+            ]);
+
+            return response()->json([
+                'error' => 'Erro interno ao buscar contratos. Verifique os logs.'
+            ], 500);
+        }
+    }
+
+    public function buscarDocumentoContrato($contrato_id)
+    {
+        try {
+            // Faz a requisição à API
+            $response = Http::IXC()
+                ->withHeaders([
+                    'ixcsoft' => 'listar',
+                    'Content-Type' => 'application/json'
+                ])
+                ->withBody(json_encode(['id' => $contrato_id]), 'application/json')
+                ->get('/cliente_contrato_imprimir_contrato_17678');
+
+            // Verifica se a resposta é válida
+            if ($response->failed()) {
+                Log::channel('ixc')->error('Erro na requisição IXC Provedor', [
+                    'status_code' => $response->status(),
+                    'response'    => $response->body()
+                ]);
+                return response()->json([
+                    'error' => 'Erro ao obter documento do IXC. Verifique os logs.'
+                ], 500);
+            }
+
+            $pdfBase64 = $response->body();
+
+            return $pdfBase64;
+        } catch (\Exception $e) {
+            // Registra erro no log
+            Log::channel('ixc')->error('Erro ao buscar documento do IXC', [
                 'message' => $e->getMessage(),
                 // 'trace'   => $e->getTrace()
             ]);

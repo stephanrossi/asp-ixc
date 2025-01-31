@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Log;
 
 class SignerController extends Controller
 {
-    public function handle(Request $request)
+    public static function handle(Request $request)
     {
         // Extrair o token do cabeçalho Authorization
         $authorizationHeader = $request->header('Authorization');
 
         // Validar o cabeçalho Authorization
-        if (!$this->validateAuthorizationHeader($authorizationHeader)) {
+        if (!self::validateAuthorizationHeader($authorizationHeader)) {
             Log::channel('webhook')->error('Authorization error');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
