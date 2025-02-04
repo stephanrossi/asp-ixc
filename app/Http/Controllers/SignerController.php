@@ -2,55 +2,93 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contract;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SignerController extends Controller
 {
-    public static function handle(Request $request)
+    public static function handle($contrato_id, $dados_cliente, $pdf_contrato_base64)
     {
-        // Extrair o token do cabeçalho Authorization
-        $authorizationHeader = $request->header('Authorization');
+        try {
+            set_time_limit(0);
 
-        // Validar o cabeçalho Authorization
-        if (!self::validateAuthorizationHeader($authorizationHeader)) {
-            Log::channel('webhook')->error('Authorization error');
-            return response()->json(['error' => 'Unauthorized'], 401);
+            //Sobe a base64 do contrato para a ASP e pega o ID dele depois de criado
+            $asp_contrato_id = self::uploadHash($pdf_contrato_base64);
+
+            //Envia os dados para o contrato ser criado na ASP
+            self::createDocument($dados_cliente, $asp_contrato_id);
+
+            //Atualiza no banco, o contrato com o ID do documento da ASP
+            Contract::where('contract_id', $contrato_id)
+                ->update(['asp_document_id' => $asp_contrato_id]);
+
+            // return $update_contrato;
+        } catch (Exception $e) {
+            Log::channel('asp')->error('uploadHash: ' . $e->getMessage());
+            print_r('uploadHash: ' . $e->getMessage());
         }
-
-        // Obter os dados do webhook
-        $payload = $request->all();
-        Log::channel('webhook')->info('Recebido: ', $payload);
-
-        // Salvar os dados no banco de dados
-        // try {
-        //     // $this->saveWebhookData($payload);
-        //     Log::channel('webhook')->error('Dados do webhook salvos com sucesso no banco de dados.');
-        // } catch (Exception $e) {
-        //     Log::channel('webhook')->error('Erro ao salvar os dados do webhook no banco de dados.', ['message' => $e->getMessage()]);
-        //     return response()->json(['error' => 'Internal Server Error'], 500);
-        // }
     }
 
-    private function validateAuthorizationHeader($authorizationHeader)
+    private static function uploadHash($hash)
     {
-        if (!$authorizationHeader) {
-            return false;
-        }
+        try {
+            $uploadHash = Http::Signer()
+                ->post('/uploads/bytes', ["bytes" => $hash]);
 
-        // Verificar se o token está no formato Bearer
-        if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
-            $token = $matches[1];
-        } else {
-            return false;
-        }
+            $decodedResponse = json_decode($uploadHash);
 
-        // Verificar se o token é válido
-        if ($token !== env('WEBHOOK_TOKEN')) {
-            return false;
-        }
+            $documentID = $decodedResponse->id;
 
-        return true;
+            return $documentID;
+        } catch (Exception $e) {
+            Log::channel('asp')->error('uploadHash: ' . $e->getMessage());
+            exit;
+        }
+    }
+
+    private static function createDocument($dados_cliente, $asp_contrato_id)
+    {
+        try {
+            Http::Signer()
+                ->post('/documents', [
+                    "files" => [
+                        [
+                            "displayName" => "Contrato - " . $dados_cliente['razao'],
+                            "id" => $asp_contrato_id,
+                            "name" => "Contrato - " . $dados_cliente['razao'] . ".pdf",
+                            "contentType" => "application/pdf"
+                        ]
+                    ],
+                    // "notifiedEmails" => ["relacionamento@previsa.com.br", "tayedaribeiro@previsa.com.br", "juniod@previsa.com.br"],
+                    "flowActions" => [
+                        [
+                            "type" => "Signer",
+                            "user" => [
+                                "name" => $dados_cliente['razao'],
+                                "identifier" => $dados_cliente['cnpj_cpf'],
+                                "email" => $dados_cliente['email']
+                            ],
+                            "allowElectronicSignature" => true,
+                            "prePositionedMarks" => [
+                                [
+                                    "type" => "SignatureVisualRepresentation",
+                                    "uploadId" => $asp_contrato_id,
+                                    "topLeftX" => 150,
+                                    "topLeftY" => 660,
+                                    "width" => 200,
+                                    "pageNumber" => 1
+                                ],
+                            ]
+                        ],
+                    ],
+                ]);
+            Log::channel('asp')->info("CONTRATO - " . $dados_cliente['razao'] . " criado.");
+        } catch (Exception $e) {
+            Log::channel('asp')->error('createDocument: ' . $e->getMessage());
+            print_r("createDocument: " . $e->getMessage());
+        }
     }
 }

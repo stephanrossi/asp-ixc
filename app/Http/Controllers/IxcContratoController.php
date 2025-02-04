@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use App\Models\Contract;
-use Illuminate\Broadcasting\Channel;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,18 +17,30 @@ class IxcContratoController extends Controller
      */
     public function handle()
     {
-        $contratos = $this->buscarContratos();
+        set_time_limit(0);
 
-        print_r($contratos->toJson());die;
+        try {
+            $contratos = $this->buscarContratos();
 
-        foreach ($contratos as $contrato) {
-            if ($contrato['asp_document_id'] == null || empty($contrato['asp_document_id'])) {
-                $dados_cliente = $this->buscarCliente($contrato['id_cliente']);
+            $contratos = $contratos->filter(function ($contrato) {
+                return is_null($contrato->asp_document_id) || $contrato->asp_document_id === '';
+            });
 
-                $pdf_contrato_base64 = $this->buscarDocumentoContrato($contrato['id']);
+            foreach ($contratos as $contrato) {
+                // if ($contrato['asp_document_id'] == null || empty($contrato['asp_document_id'])) {
+                $contrato_id = $contrato['contract_id'];
+                $dados_cliente = $this->buscarCliente($contrato['cliente_id']);
+                $pdf_contrato_base64 = $this->buscarDocumentoContrato($contrato['contract_id']);
 
-                SignerController::handle($dados_cliente, $pdf_contrato_base64);
+                SignerController::handle($contrato_id, $dados_cliente, $pdf_contrato_base64);
+                sleep(rand(1, 3));
+
+                // } else {
+                //     echo "handle contratos zeradosaqui";
+                // }
             }
+        } catch (Exception $e) {
+            Log::channel('ixc')->error('IXC-handle: ' . $e->getMessage());
         }
     }
 
@@ -71,9 +83,9 @@ class IxcContratoController extends Controller
 
                 if (count($contrato) == 0) {
                     Contract::create([
-                        'contract_id' => $contratos['id'],
-                        'status' => $contratos['status'],
-                        'cliente_id' => $contratos['id_cliente']
+                        'contract_id' => trim($contratos['id']),
+                        'status' => trim($contratos['status']),
+                        'cliente_id' => trim($contratos['id_cliente'])
                     ]);
                 }
             }
@@ -91,7 +103,7 @@ class IxcContratoController extends Controller
         }
     }
 
-    public function buscarDocumentoContrato($contrato_id)
+    private function buscarDocumentoContrato($contrato_id)
     {
         try {
             // Faz a requisição à API
@@ -105,7 +117,7 @@ class IxcContratoController extends Controller
 
             // Verifica se a resposta é válida
             if ($response->failed()) {
-                Log::channel('ixc')->error('Erro na requisição IXC Provedor', [
+                Log::channel('ixc')->error('buscarDocumentoContrato: ', [
                     'status_code' => $response->status(),
                     'response'    => $response->body()
                 ]);
@@ -130,7 +142,7 @@ class IxcContratoController extends Controller
         }
     }
 
-    public function buscarCliente($cliente_id)
+    private function buscarCliente($cliente_id)
     {
         try {
             // Faz a requisição à API
@@ -150,7 +162,7 @@ class IxcContratoController extends Controller
 
             // Verifica se a resposta é válida
             if ($response->failed()) {
-                Log::channel('ixc')->error('Erro na requisição IXC Provedor', [
+                Log::channel('ixc')->error("buscarCliente", [
                     'status_code' => $response->status(),
                     'response'    => $response->body()
                 ]);
@@ -169,18 +181,19 @@ class IxcContratoController extends Controller
 
                 if (count($cliente) == 0) {
                     Cliente::create([
-                        'client_id' => $clientes['id'],
-                        'razao' => $clientes['razao'],
-                        'cnpj_cpf' => $clientes['cnpj_cpf'],
-                        'email' => $clientes['email']
+                        'cliente_id' => trim($clientes['id']),
+                        'razao' => trim($clientes['razao']),
+                        'cnpj_cpf' => trim($clientes['cnpj_cpf']),
+                        'email' => trim($clientes['email'])
                     ]);
                 }
             }
+
             return Cliente::where('cliente_id', $cliente_id)
                 ->first();
         } catch (\Exception $e) {
             // Registra erro no log
-            Log::channel('ixc')->error('Erro ao obter dados do cliente', [
+            Log::channel('ixc')->error('buscarCliente', [
                 'message' => $e->getMessage(),
                 // 'trace'   => $e->getTrace()
             ]);

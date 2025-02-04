@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\IxcContratoController;
 use App\Http\Controllers\SignerController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,8 @@ Route::post('/ixc-cliente', [IxcContratoController::class, 'buscarCliente']);
 Route::get('/ixc-documento', [IxcContratoController::class, 'buscarDocumentoContrato']);
 
 Route::get('/handle', [IxcContratoController::class, 'handle']);
+Route::get('/handle', [WebhookController::class, 'handle']);
+
 
 
 Route::get('/ping', function () {
