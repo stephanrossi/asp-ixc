@@ -24,7 +24,7 @@ class WebhookController extends Controller
 
             $type = $payload['type'];
             if ($type == 'DocumentsCreated') {
-                Log::channel('webhook')->info('certo', $type);
+                Log::channel('webhook')->info('TIPO TIPO');
             }
         } catch (Exception $e) {
             print_r($e->getMessage());
