@@ -41,6 +41,7 @@ class IxcContratoController extends Controller
             }
         } catch (Exception $e) {
             Log::channel('ixc')->error('IXC-handle: ' . $e->getMessage());
+            print_r($e->getMessage());
         }
     }
 
