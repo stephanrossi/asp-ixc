@@ -18,12 +18,11 @@ class SignerController extends Controller
             //Sobe a base64 do contrato para a ASP e pega o ID dele depois de criado
             $asp_contrato_id = self::uploadHash($pdf_contrato_base64);
 
-            //Envia os dados para o contrato ser criado na ASP
-            self::createDocument($dados_cliente, $asp_contrato_id);
-
-            //Atualiza no banco, o contrato com o ID do documento da ASP
             Contract::where('contract_id', $contrato_id)
-                ->update(['asp_document_id' => $asp_contrato_id]);
+                ->update(['asp_document_id2' => $asp_contrato_id]);
+
+            //Envia os dados para o contrato ser criado na ASP
+            self::createDocument($contrato_id, $dados_cliente, $asp_contrato_id);
 
             // return $update_contrato;
         } catch (Exception $e) {
@@ -49,10 +48,10 @@ class SignerController extends Controller
         }
     }
 
-    private static function createDocument($dados_cliente, $asp_contrato_id)
+    private static function createDocument($contrato_id, $dados_cliente, $asp_contrato_id)
     {
         try {
-            Http::Signer()
+            $upload_document = Http::Signer()
                 ->post('/documents', [
                     "files" => [
                         [
@@ -67,9 +66,9 @@ class SignerController extends Controller
                         [
                             "type" => "Signer",
                             "user" => [
-                                "name" => $dados_cliente['razao'],
-                                "identifier" => $dados_cliente['cnpj_cpf'],
-                                "email" => $dados_cliente['email']
+                                "name" => "Stephan Rossi",
+                                "identifier" => "05976325610",
+                                "email" => "stephan@previsa.com.br"
                             ],
                             "allowElectronicSignature" => true,
                             "prePositionedMarks" => [
@@ -77,14 +76,42 @@ class SignerController extends Controller
                                     "type" => "SignatureVisualRepresentation",
                                     "uploadId" => $asp_contrato_id,
                                     "topLeftX" => 150,
-                                    "topLeftY" => 660,
+                                    "topLeftY" => 100,
                                     "width" => 200,
                                     "pageNumber" => 1
                                 ],
                             ]
                         ],
+                        // [
+                        //     "type" => "Signer",
+                        //     "user" => [
+                        //         "name" => $dados_cliente['razao'],
+                        //         "identifier" => $dados_cliente['cnpj_cpf'],
+                        //         "email" => $dados_cliente['email']
+                        //     ],
+                        //     "allowElectronicSignature" => true,
+                        //     "prePositionedMarks" => [
+                        //         [
+                        //             "type" => "SignatureVisualRepresentation",
+                        //             "uploadId" => $asp_contrato_id,
+                        //             "topLeftX" => 150,
+                        //             "topLeftY" => 100,
+                        //             "width" => 200,
+                        //             "pageNumber" => 1
+                        //         ],
+                        //     ]
+                        // ],
                     ],
                 ]);
+
+            //Pega o ID do documento criado
+            $document_data = $upload_document->json();
+            $document_id = $document_data[0]['documentId'];
+
+            //Atualiza no banco, o contrato com o ID do documento da ASP
+            Contract::where('contract_id', $contrato_id)
+                ->update(['asp_document_id' => $document_id]);
+
             Log::channel('asp')->info("CONTRATO - " . $dados_cliente['razao'] . " criado.");
         } catch (Exception $e) {
             Log::channel('asp')->error('createDocument: ' . $e->getMessage());

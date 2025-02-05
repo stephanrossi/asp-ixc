@@ -10,14 +10,14 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/webhook', [SignerController::class, 'handle']);
+Route::post('/webhook', [WebhookController::class, 'handle']);
 
 Route::post('/ixc-contrato', [IxcContratoController::class, 'buscarContratos']);
 Route::post('/ixc-cliente', [IxcContratoController::class, 'buscarCliente']);
 Route::get('/ixc-documento', [IxcContratoController::class, 'buscarDocumentoContrato']);
 
 Route::get('/handle', [IxcContratoController::class, 'handle']);
-Route::get('/handle', [WebhookController::class, 'handle']);
+// Route::get('/handle', [WebhookController::class, 'handle']);
 
 
 
