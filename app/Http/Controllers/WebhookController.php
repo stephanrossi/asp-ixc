@@ -20,7 +20,7 @@ class WebhookController extends Controller
             }
             $payload = $request->all();
 
-            Log::channel('webhook')->info('Webhook recebido', $payload);
+            // Log::channel('webhook')->info('Webhook recebido', $payload);
 
             $type = $payload['type'];
             if ($type == 'DocumentsCreated') {
