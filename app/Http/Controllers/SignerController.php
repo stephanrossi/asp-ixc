@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class SignerController extends Controller
 {
@@ -26,8 +27,8 @@ class SignerController extends Controller
 
             // return $update_contrato;
         } catch (Exception $e) {
-            Log::channel('asp')->error('uploadHash: ' . $e->getMessage());
-            print_r('uploadHash: ' . $e->getMessage());
+            Log::channel('asp')->error('uploadHash=> ' . $e->getMessage());
+            print_r('uploadHash=> ' . $e->getMessage());
         }
     }
 
@@ -43,7 +44,7 @@ class SignerController extends Controller
 
             return $documentID;
         } catch (Exception $e) {
-            Log::channel('asp')->error('uploadHash: ' . $e->getMessage());
+            Log::channel('asp')->error('uploadHash=> ' . $e->getMessage());
             exit;
         }
     }
@@ -114,8 +115,49 @@ class SignerController extends Controller
 
             Log::channel('asp')->info("CONTRATO - " . $dados_cliente['razao'] . " criado.");
         } catch (Exception $e) {
-            Log::channel('asp')->error('createDocument: ' . $e->getMessage());
-            print_r("createDocument: " . $e->getMessage());
+            Log::channel('asp')->error('createDocument=> ' . $e->getMessage());
+            print_r("createDocument=> " . $e->getMessage());
+        }
+    }
+
+    public static function downloadSignedDocument()
+    {
+        try {
+            $response = Http::withHeaders([
+                'X-Api-Key' => env('SIGNER_API_TOKEN')
+            ])->get("https://asp.assinaturasempapel.com.br/api/documents/7b1279f9-38e2-4050-bda4-ee22febe6700/content-b64?type=PrinterFriendlyVersion", [
+                // 'type' => 'PrinterFriendlyVersion'
+            ]);
+
+            $response_body = $response->body();
+
+            $base64Content = json_decode($response_body, true);
+
+            // Decodifica o conteúdo base64
+            $pdfContent = base64_decode($base64Content['bytes']);
+            if ($pdfContent === false) {
+                return response()->json([
+                    'error' => 'Erro ao decodificar o arquivo PDF.'
+                ], 500);
+            }
+
+            // 3. Define o nome do arquivo e salva no diretório "documents" no storage/app
+            $fileName = "document_" . time() . ".pdf";
+            Storage::disk('local')->put("documents/{$fileName}", $pdfContent);
+
+            // Obtém o caminho absoluto do arquivo salvo (pode ser adaptado conforme a necessidade)
+            $filePath = Storage::disk('local')->path("documents/{$fileName}");
+
+            return response()->json([
+                'file_path' => $filePath,
+                // 'message'   => 'Arquivo PDF baixado, decodificado e salvo com sucesso!'
+            ]);
+
+            // Retorna o conteúdo da resposta
+            // return response($response->body());
+        } catch (Exception $e) {
+            Log::channel('asp')->error($e->getMessage());
+            print_r($e->getMessage());
         }
     }
 }

@@ -16,6 +16,8 @@ Route::post('/ixc-contrato', [IxcContratoController::class, 'buscarContratos']);
 Route::post('/ixc-cliente', [IxcContratoController::class, 'buscarCliente']);
 Route::get('/ixc-documento', [IxcContratoController::class, 'buscarDocumentoContrato']);
 
+Route::get('signer-document', [SignerController::class, 'downloadSignedDocument']);
+
 Route::get('/handle', [IxcContratoController::class, 'handle']);
 // Route::get('/handle', [WebhookController::class, 'handle']);
 

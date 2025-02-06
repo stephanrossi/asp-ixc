@@ -143,6 +143,51 @@ class IxcContratoController extends Controller
         }
     }
 
+    private function inserirContrato($caminho_arquivo, $contrato_id, $cliente_id)
+    {
+        try {
+            // Faz a requisição à API
+            $response = Http::IXC()
+                ->attach(
+                    // Nome do campo do arquivo no formulário
+                    'local_arquivo',
+                    fopen($caminho_arquivo, 'r'),
+                    // Nome do arquivo, opcional (pode ser usado para informar o nome original)
+                    basename($caminho_arquivo)
+                )
+                ->post([
+                    'descricao'  => 'Teste',
+                    'id_cliente' => $cliente_id,
+                    'id_contrato' => $contrato_id,
+                ]);
+
+            // Verifica se a resposta é válida
+            if ($response->failed()) {
+                Log::channel('ixc')->error('inserirContrato: ', [
+                    'status_code' => $response->status(),
+                    'response'    => $response->body()
+                ]);
+                return response()->json([
+                    'error' => 'Erro ao obter documento do IXC. Verifique os logs.'
+                ], 500);
+            }
+
+            $pdfBase64 = $response->body();
+
+            return $pdfBase64;
+        } catch (\Exception $e) {
+            // Registra erro no log
+            Log::channel('ixc')->error('Erro ao inserir documento do IXC', [
+                'message' => $e->getMessage(),
+                // 'trace'   => $e->getTrace()
+            ]);
+
+            return response()->json([
+                'error' => 'Erro interno ao buscar contratos. Verifique os logs.'
+            ], 500);
+        }
+    }
+
     private function buscarCliente($cliente_id)
     {
         try {
