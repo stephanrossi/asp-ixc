@@ -72,6 +72,7 @@ class SignerController extends Controller
                                 "email" => "stephan@previsa.com.br"
                             ],
                             "allowElectronicSignature" => true,
+                            "requireSelfieAuthenticationToSignElectronically" => true,
                             "prePositionedMarks" => [
                                 [
                                     "type" => "SignatureVisualRepresentation",
@@ -83,25 +84,6 @@ class SignerController extends Controller
                                 ],
                             ]
                         ],
-                        // [
-                        //     "type" => "Signer",
-                        //     "user" => [
-                        //         "name" => $dados_cliente['razao'],
-                        //         "identifier" => $dados_cliente['cnpj_cpf'],
-                        //         "email" => $dados_cliente['email']
-                        //     ],
-                        //     "allowElectronicSignature" => true,
-                        //     "prePositionedMarks" => [
-                        //         [
-                        //             "type" => "SignatureVisualRepresentation",
-                        //             "uploadId" => $asp_contrato_id,
-                        //             "topLeftX" => 150,
-                        //             "topLeftY" => 100,
-                        //             "width" => 200,
-                        //             "pageNumber" => 1
-                        //         ],
-                        //     ]
-                        // ],
                     ],
                 ]);
 
@@ -113,20 +95,20 @@ class SignerController extends Controller
             Contract::where('contract_id', $contrato_id)
                 ->update(['asp_document_id' => $document_id]);
 
-            Log::channel('asp')->info("CONTRATO - " . $dados_cliente['razao'] . " criado.");
+            Log::channel('asp')->info("Contrato - " . $dados_cliente['razao'] . ", CPF: " . $dados_cliente['cnpj_cpf'] . " criado.");
         } catch (Exception $e) {
-            Log::channel('asp')->error('createDocument=> ' . $e->getMessage());
-            print_r("createDocument=> " . $e->getMessage());
+            Log::channel('asp')->error('createDocument: ' . $e->getMessage());
+            print_r("createDocument: " . $e->getMessage());
         }
     }
 
-    public static function downloadSignedDocument()
+    public static function downloadSignedDocument($asp_contrato_id)
     {
         try {
             $response = Http::withHeaders([
                 'X-Api-Key' => env('SIGNER_API_TOKEN')
-            ])->get("https://asp.assinaturasempapel.com.br/api/documents/7b1279f9-38e2-4050-bda4-ee22febe6700/content-b64?type=PrinterFriendlyVersion", [
-                // 'type' => 'PrinterFriendlyVersion'
+            ])->get("https://asp.assinaturasempapel.com.br/api/documents/$asp_contrato_id/content-b64", [
+                'type' => 'PrinterFriendlyVersion'
             ]);
 
             $response_body = $response->body();
@@ -135,10 +117,9 @@ class SignerController extends Controller
 
             // Decodifica o conteúdo base64
             $pdfContent = base64_decode($base64Content['bytes']);
+
             if ($pdfContent === false) {
-                return response()->json([
-                    'error' => 'Erro ao decodificar o arquivo PDF.'
-                ], 500);
+                Log::channel('asp')->error('Erro ao decodificar o arquivo PDF.');
             }
 
             // 3. Define o nome do arquivo e salva no diretório "documents" no storage/app
@@ -148,12 +129,12 @@ class SignerController extends Controller
             // Obtém o caminho absoluto do arquivo salvo (pode ser adaptado conforme a necessidade)
             $filePath = Storage::disk('local')->path("documents/{$fileName}");
 
+            // Retorna o conteúdo da resposta
             return response()->json([
                 'file_path' => $filePath,
                 // 'message'   => 'Arquivo PDF baixado, decodificado e salvo com sucesso!'
             ]);
 
-            // Retorna o conteúdo da resposta
             // return response($response->body());
         } catch (Exception $e) {
             Log::channel('asp')->error($e->getMessage());

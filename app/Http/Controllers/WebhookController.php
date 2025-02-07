@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contract;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,11 +21,24 @@ class WebhookController extends Controller
             }
             $payload = $request->all();
 
-            // Log::channel('webhook')->info('Webhook recebido', $payload);
+            Log::channel('webhook')->info('Webhook recebido', $payload);
 
             $type = $payload['type'];
-            if ($type == 'DocumentsCreated') {
-                Log::channel('webhook')->info('TIPO TIPO');
+
+            if ($type == 'DocumentSigned') {
+                $asp_contrato_id = $payload['data']['id'];
+                //Baixa o arquivo assinado do ASP
+                $response = SignerController::downloadSignedDocument($asp_contrato_id);
+
+                $document_data = $response->getData(true);
+                $document_location = $document_data['file_path'];
+
+                //Busca os dados do contrato, com base no ID do documento
+                $data = Contract::where('asp_document_id', $asp_contrato_id)
+                    ->first();
+
+                //Insere o contrato assinado no IXC
+                IxcContratoController::inserirContrato($document_location, $data['contract_id'], $data['cliente_id']);
             }
         } catch (Exception $e) {
             print_r($e->getMessage());
@@ -53,7 +67,7 @@ class WebhookController extends Controller
 
             return true;
         } catch (Exception $e) {
-            Log::channel('webhook')->error($e->getMessage());
+            Log::channel('webhook')->error('validateAuthorizationHeader: ' . $e->getMessage());
         }
     }
 }

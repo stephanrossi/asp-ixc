@@ -143,19 +143,18 @@ class IxcContratoController extends Controller
         }
     }
 
-    private function inserirContrato($caminho_arquivo, $contrato_id, $cliente_id)
+    public static function inserirContrato($caminho_arquivo, $contrato_id, $cliente_id)
     {
         try {
             // Faz a requisição à API
             $response = Http::IXC()
                 ->attach(
                     // Nome do campo do arquivo no formulário
-                    'local_arquivo',
-                    fopen($caminho_arquivo, 'r'),
+                    'local_arquivo',fopen($caminho_arquivo, 'r'),
                     // Nome do arquivo, opcional (pode ser usado para informar o nome original)
                     basename($caminho_arquivo)
                 )
-                ->post([
+                ->post('/cliente_arquivos', [
                     'descricao'  => 'Teste',
                     'id_cliente' => $cliente_id,
                     'id_contrato' => $contrato_id,
