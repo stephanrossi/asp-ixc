@@ -1,0 +1,31 @@
+trigger:
+  branches:
+    include:
+      - main
+
+schedules:
+  - cron: '*/2 * * * *'
+    displayName: 'Execução a cada 2 minutos'
+    branches:
+      include:
+        - main
+    always: "true"
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+  - job: ExecutarHandle
+    displayName: 'Executar método handle do IxcContratoController'
+    steps:
+      - script: |
+          #!/bin/bash
+          # Navegar até o diretório do projeto
+          cd /site/wwwroot/app/Http/Controllers
+
+          # Instalar dependências, se necessário
+          composer install --no-interaction --prefer-dist
+
+          # Executar o método handle do IxcContratoController
+          php artisan ixc:contrato:handle
+        displayName: 'Executando o método handle'

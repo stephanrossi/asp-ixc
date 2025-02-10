@@ -27,17 +27,12 @@ class IxcContratoController extends Controller
             });
 
             foreach ($contratos as $contrato) {
-                // if ($contrato['asp_document_id'] == null || empty($contrato['asp_document_id'])) {
                 $contrato_id = $contrato['contract_id'];
                 $dados_cliente = $this->buscarCliente($contrato['cliente_id']);
                 $pdf_contrato_base64 = $this->buscarDocumentoContrato($contrato['contract_id']);
 
                 SignerController::handle($contrato_id, $dados_cliente, $pdf_contrato_base64);
                 sleep(rand(1, 3));
-
-                // } else {
-                //     echo "handle contratos zeradosaqui";
-                // }
             }
         } catch (Exception $e) {
             Log::channel('ixc')->error('IXC-handle: ' . $e->getMessage());
@@ -150,7 +145,8 @@ class IxcContratoController extends Controller
             $response = Http::IXC()
                 ->attach(
                     // Nome do campo do arquivo no formulário
-                    'local_arquivo',fopen($caminho_arquivo, 'r'),
+                    'local_arquivo',
+                    fopen($caminho_arquivo, 'r'),
                     // Nome do arquivo, opcional (pode ser usado para informar o nome original)
                     basename($caminho_arquivo)
                 )
