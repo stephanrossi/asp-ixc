@@ -27,7 +27,7 @@ class SignerController extends Controller
 
             // return $update_contrato;
         } catch (Exception $e) {
-            Log::channel('asp')->error('uploadHash=> ' . $e->getMessage());
+            Log::channel('asp')->error('handle: ' . $e->getMessage());
             print_r('uploadHash=> ' . $e->getMessage());
         }
     }
@@ -137,7 +137,7 @@ class SignerController extends Controller
 
             // return response($response->body());
         } catch (Exception $e) {
-            Log::channel('asp')->error($e->getMessage());
+            Log::channel('asp')->error("downloadSignedDocument: " . $e->getMessage());
             print_r($e->getMessage());
         }
     }

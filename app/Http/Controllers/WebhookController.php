@@ -23,9 +23,9 @@ class WebhookController extends Controller
 
             Log::channel('webhook')->info('Webhook recebido', $payload);
 
-            $type = $payload['type'];
+            $webhook_type = $payload['type'];
 
-            if ($type == 'DocumentSigned') {
+            if ($webhook_type == 'DocumentSigned') {
                 $asp_contrato_id = $payload['data']['id'];
                 //Baixa o arquivo assinado do ASP
                 $response = SignerController::downloadSignedDocument($asp_contrato_id);
@@ -42,7 +42,7 @@ class WebhookController extends Controller
             }
         } catch (Exception $e) {
             print_r($e->getMessage());
-            Log::channel('webhook')->error($e->getMessage());
+            Log::channel('webhook')->error("handle:" . $e->getMessage());
         }
     }
 

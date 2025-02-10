@@ -60,7 +60,7 @@ class IxcContratoController extends Controller
 
             // Verifica se a resposta é válida
             if ($response->failed()) {
-                Log::channel('ixc')->error('Erro na requisição IXC Provedor', [
+                Log::channel('ixc')->error("buscarContratos: ", [
                     'status_code' => $response->status(),
                     'response'    => $response->body()
                 ]);
@@ -127,7 +127,7 @@ class IxcContratoController extends Controller
             return $pdfBase64;
         } catch (\Exception $e) {
             // Registra erro no log
-            Log::channel('ixc')->error('Erro ao buscar documento do IXC', [
+            Log::channel('ixc')->error('buscarDocumentoContrato: ', [
                 'message' => $e->getMessage(),
                 // 'trace'   => $e->getTrace()
             ]);
@@ -172,7 +172,7 @@ class IxcContratoController extends Controller
             return $pdfBase64;
         } catch (\Exception $e) {
             // Registra erro no log
-            Log::channel('ixc')->error('Erro ao inserir documento do IXC', [
+            Log::channel('ixc')->error('inserirContrato: ', [
                 'message' => $e->getMessage(),
                 // 'trace'   => $e->getTrace()
             ]);
