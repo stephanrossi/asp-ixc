@@ -18,6 +18,9 @@ Route::get('/ixc-documento', [IxcContratoController::class, 'buscarDocumentoCont
 
 Route::get('signer-document', [SignerController::class, 'downloadSignedDocument']);
 
+Route::put('/update', [IxcContratoController::class, 'atualizarContrato']);
+
+
 Route::get('/handle', [IxcContratoController::class, 'handle']);
 // Route::get('/handle', [WebhookController::class, 'handle']);
 

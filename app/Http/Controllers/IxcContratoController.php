@@ -40,7 +40,7 @@ class IxcContratoController extends Controller
         }
     }
 
-    public function buscarContratos()
+    private function buscarContratos()
     {
         try {
             // Faz a requisição à API
@@ -86,6 +86,38 @@ class IxcContratoController extends Controller
                 }
             }
             return Contract::all();
+        } catch (\Exception $e) {
+            // Registra erro no log
+            Log::channel('ixc')->error('Erro ao buscar contratos do IXC', [
+                'message' => $e->getMessage(),
+                // 'trace'   => $e->getTrace()
+            ]);
+
+            return response()->json([
+                'error' => 'Erro interno ao buscar contratos. Verifique os logs.'
+            ], 500);
+        }
+    }
+
+    public static function atualizarContrato($contrato_id)
+    {
+        try {
+            // Faz a requisição à API
+            $response = Http::IXC()
+                ->post("/cliente_contrato_ativar_cliente", [
+                    'id' => $contrato_id,
+                ]);
+
+            // Verifica se a resposta é válida
+            if ($response->failed()) {
+                Log::channel('ixc')->error("atualizarContrato: ", [
+                    'status_code' => $response->status(),
+                    'response'    => $response->body()
+                ]);
+                return response()->json([
+                    'error' => 'Erro ao obter contratos do IXC. Verifique os logs.'
+                ], 500);
+            }
         } catch (\Exception $e) {
             // Registra erro no log
             Log::channel('ixc')->error('Erro ao buscar contratos do IXC', [
