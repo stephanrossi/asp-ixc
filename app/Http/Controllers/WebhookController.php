@@ -40,6 +40,7 @@ class WebhookController extends Controller
                 //Insere o contrato assinado no IXC
                 IxcContratoController::inserirContrato($document_location, $data['contract_id'], $data['cliente_id']);
 
+                //Atualiza o status do contrato para ativo
                 IxcContratoController::atualizarContrato($data['contract_id']);
             }
         } catch (Exception $e) {

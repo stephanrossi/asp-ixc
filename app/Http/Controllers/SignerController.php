@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
 
 class SignerController extends Controller
 {
@@ -16,6 +17,16 @@ class SignerController extends Controller
         try {
             set_time_limit(0);
 
+            $pdfData = base64_decode($pdf_contrato_base64);
+
+            // Instancia o parser e processa o conteúdo do PDF
+            $parser = new Parser();
+            $pdf = $parser->parseContent($pdfData);
+
+            // Obtém as páginas do PDF e conta quantas existem
+            $pages = $pdf->getPages();
+            $pageCount = count($pages);
+
             //Sobe a base64 do contrato para a ASP e pega o ID dele depois de criado
             $asp_contrato_id = self::uploadHash($pdf_contrato_base64);
 
@@ -23,7 +34,7 @@ class SignerController extends Controller
                 ->update(['asp_document_id2' => $asp_contrato_id]);
 
             //Envia os dados para o contrato ser criado na ASP
-            self::createDocument($contrato_id, $dados_cliente, $asp_contrato_id);
+            self::createDocument($contrato_id, $dados_cliente, $asp_contrato_id, $pageCount);
 
             // return $update_contrato;
         } catch (Exception $e) {
@@ -49,7 +60,7 @@ class SignerController extends Controller
         }
     }
 
-    private static function createDocument($contrato_id, $dados_cliente, $asp_contrato_id)
+    private static function createDocument($contrato_id, $dados_cliente, $asp_contrato_id, $pageCount)
     {
         try {
             $upload_document = Http::Signer()
@@ -80,7 +91,7 @@ class SignerController extends Controller
                                     "topLeftX" => 150,
                                     "topLeftY" => 100,
                                     "width" => 200,
-                                    "pageNumber" => 1
+                                    "pageNumber" => $pageCount
                                 ],
                             ]
                         ],
