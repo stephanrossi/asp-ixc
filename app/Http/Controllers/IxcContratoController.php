@@ -49,14 +49,23 @@ class IxcContratoController extends Controller
                     'ixcsoft' => 'listar',
                 ])
                 ->post('/cliente_contrato', [
-                    'qtype' => 'status',
-                    'query' => 'P',
+                    'qtype' => 'cliente_contrato.id',
+                    'query' => '2304',
                     'oper' => '=',
                     'page' => '1',
                     'rp' => '500',
                     'sortname' => 'cliente_contrato.id',
                     'sortorder' => 'asc'
                 ]);
+            // ->post('/cliente_contrato', [
+            //     'qtype' => 'status',
+            //     'query' => 'P',
+            //     'oper' => '=',
+            //     'page' => '1',
+            //     'rp' => '500',
+            //     'sortname' => 'cliente_contrato.id',
+            //     'sortorder' => 'asc'
+            // ]);
 
             // Verifica se a resposta é válida
             if ($response->failed()) {
@@ -88,7 +97,7 @@ class IxcContratoController extends Controller
             return Contract::all();
         } catch (\Exception $e) {
             // Registra erro no log
-            Log::channel('ixc')->error('Erro ao buscar contratos do IXC', [
+            Log::channel('ixc')->error('buscarContratos: ', [
                 'message' => $e->getMessage(),
                 // 'trace'   => $e->getTrace()
             ]);
